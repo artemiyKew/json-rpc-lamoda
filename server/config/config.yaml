@@ -1,0 +1,5 @@
+bind_addr: ":1234"
+db_url: "user=artemiy password=password dbname=warehouse sslmode=disable"
+redis_addr: ":6379"
+redis_password: ""
+redis_type: 0
