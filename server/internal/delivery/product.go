@@ -24,10 +24,11 @@ type ProductOutput struct {
 	Name       string `json:"name"`
 	Size       string `json:"size"`
 	UniqueCode string `json:"unique_code"`
+	Quantity   int    `json:"quantity"`
 }
 
 type ProductsOutput struct {
-	Products []*ProductOutput `json:"products"`
+	Products []ProductOutput `json:"products"`
 }
 
 type ProductCreateInput struct {
@@ -51,75 +52,78 @@ func (r *ProductRoutes) Create(args ProductCreateInput, reply *string) error {
 	return nil
 }
 
-func (r *ProductRoutes) GetAll(args string, reply *ProductsOutput) error {
-	products, err := r.productService.GetProducts(r.ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, product := range products {
-		reply.Products = append(reply.Products, &ProductOutput{
-			ID:         product.ID,
-			Name:       product.Name,
-			UniqueCode: product.UniqueCode,
-		})
-	}
-	return nil
-}
-
 type ProductGetUnreservedByWarehouseID struct {
 	WarehouseID int `json:"warehouse_id"`
 }
 
 func (r *ProductRoutes) GetUnreservedProductsByWarehouseID(args ProductGetUnreservedByWarehouseID, reply *ProductsOutput) error {
-	products, err := r.productService.GetUnreservedProductsByWarehouseID(r.ctx, args.WarehouseID)
+	output, err := r.productService.GetUnreservedProductsByWarehouseID(r.ctx, args.WarehouseID)
 	if err != nil {
 		return err
 	}
-
-	for _, product := range products {
-		reply.Products = append(reply.Products, &ProductOutput{
+	products := make([]ProductOutput, len(output))
+	for i, product := range output {
+		products[i] = ProductOutput{
 			ID:         product.ID,
 			Name:       product.Name,
+			Size:       product.Size,
 			UniqueCode: product.UniqueCode,
-		})
+			Quantity:   product.Quantity,
+		}
 	}
+	reply.Products = products
 	return nil
 }
 
 type ProductReserve struct {
-	UniqueCode []string `json:"unique_code"`
+	UniqueCodes []string `json:"unique_codes"`
 }
 
 func (r *ProductRoutes) CreateReserve(args ProductReserve, reply *string) error {
-	if err := r.productService.ReserveProduct(r.ctx, args.UniqueCode); err != nil {
+	if err := r.productService.CreateReserve(r.ctx, args.UniqueCodes); err != nil {
 		return err
 	}
-	*reply = fmt.Sprintf("product reserved, unique code: %s", args.UniqueCode)
+	*reply = "product reserved"
 	return nil
 }
 
-func (r *ProductRoutes) CancelReserve(args ProductReserve, reply *string) error {
-	if err := r.productService.CancelReservationProduct(r.ctx, args.UniqueCode); err != nil {
+func (r *ProductRoutes) CancelReservation(args ProductReserve, reply *string) error {
+	if err := r.productService.CancelReservation(r.ctx, args.UniqueCodes); err != nil {
 		return err
 	}
-	*reply = fmt.Sprintf("cancel reservation for product with unique code: %s", args.UniqueCode)
+	*reply = "cancel reservation"
 	return nil
 }
 
-type ProductIsReserved struct {
-	UniqueCode string `json:"unique_code"`
+type GetAllReservationsInput struct{}
+
+type ProductReservation struct {
+	ID          int    `json:"reservation_id"`
+	WarehouseID int    `json:"warehouse_id"`
+	UniqueCode  string `json:"unique_code"`
+	Quantity    int    `json:"quantity"`
+	Status      string `json:"status"`
 }
 
-func (r *ProductRoutes) IsReserved(args ProductIsReserved, reply *string) error {
-	ok, err := r.productService.IsProductReserved(r.ctx, args.UniqueCode)
+type ProductReservationOutput struct {
+	ProductReservations []ProductReservation `json:"product_reservations"`
+}
+
+func (r *ProductRoutes) GetAllReservations(args GetAllReservationsInput, reply *ProductReservationOutput) error {
+	output, err := r.productService.GetAllReservations(r.ctx)
 	if err != nil {
 		return err
 	}
-	if !ok {
-		*reply = fmt.Sprintf("product: %s is not reserved", args.UniqueCode)
-		return nil
+	reservations := make([]ProductReservation, len(output.ProductReservations))
+	for i, reservation := range output.ProductReservations {
+		reservations[i] = ProductReservation{
+			ID:          reservation.ID,
+			WarehouseID: reservation.WarehouseID,
+			UniqueCode:  reservation.UniqueCode,
+			Quantity:    reservation.Quantity,
+			Status:      reservation.Status,
+		}
 	}
-	*reply = fmt.Sprintf("cancel reservation for product with unique code: %s", args.UniqueCode)
+	reply.ProductReservations = reservations
 	return nil
 }

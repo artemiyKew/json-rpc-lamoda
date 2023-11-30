@@ -14,7 +14,6 @@ import (
 	"github.com/artemiyKew/json-rpc-lamoda/internal/delivery"
 	"github.com/artemiyKew/json-rpc-lamoda/internal/repo"
 	"github.com/artemiyKew/json-rpc-lamoda/internal/repo/postgres"
-	"github.com/artemiyKew/json-rpc-lamoda/internal/repo/redis"
 	"github.com/artemiyKew/json-rpc-lamoda/internal/service"
 	"github.com/sirupsen/logrus"
 )
@@ -39,23 +38,9 @@ func Run(configPath string) {
 	pg := postgres.New(db)
 	defer pg.Close()
 
-	// Redis
-	logrus.Info("Initializing redis...")
-	rdb := redis.NewDB(*cfg)
-	if err := rdb.Ping(ctx); err != nil {
-		logrus.Fatal(err)
-	}
-
-	defer func() {
-		err := rdb.Close(ctx)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-	}()
-
 	// Repositories
 	logrus.Info("Initializing repositories...")
-	repositories := repo.NewRepositories(rdb, pg)
+	repositories := repo.NewRepositories(pg)
 
 	// Services dependencies
 	logrus.Info("Initializing services...")
@@ -71,16 +56,16 @@ func Run(configPath string) {
 	// rpc server
 	warehouseRoutes := delivery.WarehouseRoutes
 	productRoutes := delivery.ProductRoutes
-	shippingRoutes := delivery.ShippingRoutes
+	// shippingRoutes := delivery.ShippingRoutes
 	if err := rpc.Register(warehouseRoutes); err != nil {
 		logrus.Fatal(err)
 	}
 	if err := rpc.Register(productRoutes); err != nil {
 		logrus.Fatal(err)
 	}
-	if err := rpc.Register(shippingRoutes); err != nil {
-		logrus.Fatal(err)
-	}
+	// if err := rpc.Register(shippingRoutes); err != nil {
+	// 	logrus.Fatal(err)
+	// }
 
 	listener, err := net.Listen("tcp", cfg.BindAddr)
 	if err != nil {
@@ -93,7 +78,6 @@ func Run(configPath string) {
 		}
 	}()
 
-	logrus.Infof("JSON-RPC Server listening on %s", cfg.BindAddr)
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
