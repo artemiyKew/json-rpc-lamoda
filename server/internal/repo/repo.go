@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/artemiyKew/json-rpc-lamoda/internal/repo/postgres"
-	"github.com/artemiyKew/json-rpc-lamoda/internal/repo/redis"
 	"github.com/artemiyKew/json-rpc-lamoda/internal/types"
 )
 
@@ -17,35 +16,36 @@ type Warehouse interface {
 type Product interface {
 	CreateProduct(context.Context, types.Product) error
 	GetProducts(context.Context) ([]types.Product, error)
-	GetUnreservedProductsByWarehouseID(context.Context, int) ([]types.Product, error)
 	ReserveProduct(context.Context, string, int) error
-	CancelReservationProduct(context.Context, string, int, int) error
-}
-
-type ProductRedis interface {
-	ReserveProduct(context.Context, string, int, int) error
 	CancelReservationProduct(context.Context, string, int) error
-	IsProductReserved(context.Context, string) (bool, error)
 }
 
 type Shipping interface {
 	CreateShipping(context.Context, types.Shipping) error
-	GetQuantityByWarehouseIDUniqueCode(context.Context, int, string) (int, error)
-	GetQuantityByUniqueCode(context.Context, string) (int, error)
+	ReserveProduct(context.Context, string, *int) (types.Shipping, error)
+	GetUnreservedProductsByWarehouseID(context.Context, int) ([]types.Shipping, error)
+	CancelReservationProduct(ctx context.Context, uniqueCode string, warehouseId int, quantity int) error
+}
+
+type Reservation interface {
+	CreateReservation(context.Context, types.Reservation) error
+	CancelReservation(context.Context, types.Reservation) ([]types.Reservation, error)
+
+	GetAllReservations(context.Context) ([]types.Reservation, error)
 }
 
 type Repositories struct {
 	Warehouse
 	Product
-	ProductRedis
 	Shipping
+	Reservation
 }
 
-func NewRepositories(rdb *redis.RedisDB, db *postgres.PostgresDB) *Repositories {
+func NewRepositories(db *postgres.PostgresDB) *Repositories {
 	return &Repositories{
-		Warehouse:    postgres.NewWarehouseRepo(db),
-		Product:      postgres.NewProductRepo(db),
-		ProductRedis: redis.NewProductRepo(rdb),
-		Shipping:     postgres.NewShippingRepo(db),
+		Warehouse:   postgres.NewWarehouseRepo(db),
+		Product:     postgres.NewProductRepo(db),
+		Shipping:    postgres.NewShippingRepo(db),
+		Reservation: postgres.NewReservationRepo(db),
 	}
 }

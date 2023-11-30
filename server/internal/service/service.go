@@ -37,16 +37,25 @@ type ProductOutput struct {
 	Quantity   int    `json:"quantity"`
 }
 
+type ProductReservation struct {
+	ID          int    `json:"reservation_id"`
+	WarehouseID int    `json:"warehouse_id"`
+	UniqueCode  string `json:"unique_code"`
+	Quantity    int    `json:"quantity"`
+	Status      string `json:"status"`
+}
+
+type ProductReservationOutput struct {
+	ProductReservations []ProductReservation `json:"product_reservations"`
+}
+
 type Product interface {
-	// Postgres
 	CreateProduct(context.Context, ProductCreateInput) error
 	GetProducts(context.Context) ([]*ProductOutput, error)
 	GetUnreservedProductsByWarehouseID(context.Context, int) ([]*ProductOutput, error)
-
-	// Redis
-	ReserveProduct(context.Context, []string) error
-	CancelReservationProduct(context.Context, []string) error
-	IsProductReserved(context.Context, string) (bool, error)
+	CreateReserve(context.Context, []string) error
+	CancelReservation(context.Context, []string) error
+	GetAllReservations(ctx context.Context) (ProductReservationOutput, error)
 }
 
 type ShippingCreateInput struct {
@@ -79,7 +88,7 @@ type ServicesDependencies struct {
 func NewServices(deps ServicesDependencies) *Services {
 	return &Services{
 		Warehouse: NewWarehouseService(deps.Repos.Warehouse),
-		Product:   NewProductService(deps.Repos.Product, deps.Repos.ProductRedis, deps.Repos.Shipping),
+		Product:   NewProductService(deps.Repos.Product, deps.Repos.Shipping, deps.Repos.Reservation),
 		Shipping:  NewShippingService(deps.Repos.Shipping),
 	}
 }

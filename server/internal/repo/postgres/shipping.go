@@ -2,9 +2,9 @@ package postgres
 
 import (
 	"context"
-	"errors"
 
 	"github.com/artemiyKew/json-rpc-lamoda/internal/types"
+	"github.com/sirupsen/logrus"
 )
 
 type ShippingRepo struct {
@@ -19,39 +19,64 @@ func (r *ShippingRepo) CreateShipping(ctx context.Context, s types.Shipping) err
 	query := `INSERT INTO Shipping (unique_code, warehouse_id, quantity)`
 	if err := r.db.QueryRowContext(ctx, query, s.UniqueCode, s.WarehouseID, s.Quantity).
 		Scan(&s.ID); err != nil {
+		logrus.Fatalf("ShippingRepo:CreateShipping %s", err)
+
 		return err
 	}
 	return nil
 }
 
-func (r *ShippingRepo) GetQuantityByWarehouseIDUniqueCode(ctx context.Context, warehouseID int, uniqueCode string) (int, error) {
-	query := `SELECT quantity FROM Shipping WHERE wharehouse_id = $1 AND unique_code = $2`
-	var quantity int
-	if err := r.db.SelectContext(ctx, &quantity, query, warehouseID, uniqueCode); err != nil {
-		return 0, err
+func (r *ShippingRepo) GetUnreservedProductsByWarehouseID(ctx context.Context, warehouseID int) ([]types.Shipping, error) {
+	query := `SELECT * FROM Shipping WHERE warehouse_id = $1 AND quantity > 0`
+	p := make([]types.Shipping, 0)
+	if err := r.db.SelectContext(ctx, &p, query, warehouseID); err != nil {
+		logrus.Fatalf("ShippingRepo:GetUnreservedProductsByWarehouseID %s", err)
+
+		return nil, err
 	}
-	return quantity, nil
+
+	return p, nil
 }
 
-// Get quantity from all warehouses that avaliable
-func (r *ShippingRepo) GetQuantityByUniqueCode(ctx context.Context, uniqueCode string) (quantity int, err error) {
-	query := `SELECT quantity FROM Shipping s JOIN Warehouse w ON s.warehouse_id = w.id WHERE s.unique_code = $1 AND w.availability = true`
+func (r *ShippingRepo) ReserveProduct(ctx context.Context, uniqueCode string, quantity *int) (types.Shipping, error) {
+	query := `SELECT quantity FROM Shipping WHERE unique_code = $1 AND quantity > 0 LIMIT 1`
+	var q int
 
-	rows, err := r.db.QueryContext(ctx, query, uniqueCode)
-	if err != nil {
-		return quantity, err
+	var shipping types.Shipping
+	if err := r.db.QueryRowContext(ctx, query, uniqueCode).Scan(&q); err != nil {
+		logrus.Fatalf("ShippingRepo:ReserveProduct1 %s", err)
+		return types.Shipping{}, err
 	}
 
-	defer func() {
-		err = errors.Join(err, rows.Close())
-	}()
-
-	for rows.Next() {
-		var num int
-		if err := rows.Scan(&num); err != nil {
-			return quantity, err
+	if q >= *quantity {
+		query = `UPDATE Shipping SET quantity = quantity - $1 WHERE unique_code = $2 AND quantity = $3 RETURNING *`
+		if err := r.db.GetContext(ctx, &shipping, query, *quantity, uniqueCode, q); err != nil {
+			logrus.Fatalf("ShippingRepo:ReserveProduct2 %s", err)
+			return types.Shipping{}, err
 		}
-		quantity += num
+
+		shipping.Quantity = *quantity
+		*quantity -= *quantity
+	} else {
+		query = `UPDATE Shipping SET quantity = 0 WHERE unique_code = $1 AND quantity = $2 RETURNING *`
+		if err := r.db.GetContext(ctx, &shipping, query, uniqueCode, q); err != nil {
+			logrus.Fatalf("ShippingRepo:ReserveProduct3 %s", err)
+			return types.Shipping{}, err
+		}
+
+		*quantity = *quantity - q
+		shipping.Quantity = q
+
 	}
-	return quantity, err
+
+	return shipping, nil
+}
+
+func (r *ShippingRepo) CancelReservationProduct(ctx context.Context, uniqueCode string, warehouseID, quantity int) error {
+	query := `UPDATE Shipping SET quantity = quantity + $1 WHERE unique_code = $2 AND warehouse_id = $3`
+	if err := r.db.QueryRowContext(ctx, query, quantity, uniqueCode, warehouseID).Err(); err != nil {
+		logrus.Fatalf("ShippingRepo:CancelReservationProduct %s", err)
+		return err
+	}
+	return nil
 }
