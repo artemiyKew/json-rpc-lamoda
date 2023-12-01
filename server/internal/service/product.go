@@ -22,7 +22,6 @@ func NewProductService(productRepo repo.Product, shippingRepo repo.Shipping, res
 	}
 }
 
-// Postgres
 func (s *ProductService) CreateProduct(ctx context.Context, input ProductCreateInput) error {
 	if input.Name == "" {
 		return errors.New("name is required")
@@ -113,7 +112,12 @@ func (s *ProductService) CreateReserve(ctx context.Context, uniqueCodes []string
 }
 
 func (s *ProductService) CancelReservation(ctx context.Context, uniqueCodes []string) error {
-	for _, code := range uniqueCodes {
+	uniqueCodesMap := make(map[string]int, 0)
+
+	for _, uniqueCode := range uniqueCodes {
+		uniqueCodesMap[uniqueCode]++
+	}
+	for code := range uniqueCodesMap {
 		reservations, err := s.reservationRepo.CancelReservation(ctx, types.Reservation{
 			UniqueCode: code,
 			Status:     types.ReservationStatusCanceled,

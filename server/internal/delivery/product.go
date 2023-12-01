@@ -21,8 +21,6 @@ func NewProductRoutes(ctx context.Context, productService service.Product) *Prod
 
 type ProductOutput struct {
 	ID         int    `json:"product_id"`
-	Name       string `json:"name"`
-	Size       string `json:"size"`
 	UniqueCode string `json:"unique_code"`
 	Quantity   int    `json:"quantity"`
 }
@@ -65,8 +63,6 @@ func (r *ProductRoutes) GetUnreservedProductsByWarehouseID(args ProductGetUnrese
 	for i, product := range output {
 		products[i] = ProductOutput{
 			ID:         product.ID,
-			Name:       product.Name,
-			Size:       product.Size,
 			UniqueCode: product.UniqueCode,
 			Quantity:   product.Quantity,
 		}
