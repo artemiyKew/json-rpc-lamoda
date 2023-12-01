@@ -2,8 +2,9 @@ package product
 
 import (
 	"fmt"
-	"log"
 	"net/rpc"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ProductReserve struct {
@@ -11,16 +12,15 @@ type ProductReserve struct {
 }
 
 func ReserveProduct(client *rpc.Client) error {
-	// Пример использования метода CreateReserve
 	reserveInput := ProductReserve{
 		UniqueCodes: []string{"Code3", "Code3", "Code3", "Code3", "Code3"},
 	}
 	var createReserveOutput string
 	err := client.Call("ProductRoutes.CreateReserve", reserveInput, &createReserveOutput)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
-	fmt.Println("CreateReserve Response:", createReserveOutput)
+	fmt.Printf("CreateReserve Response: %+v\n\n", createReserveOutput)
 	return nil
 }
 
@@ -43,9 +43,9 @@ func GetAllReservations(client *rpc.Client) error {
 	var reservationsOutput ProductReservationOutput
 	err := client.Call("ProductRoutes.GetAllReservations", reserveInput, &reservationsOutput)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
-	fmt.Println("GetAllReservations Response:", reservationsOutput)
+	fmt.Printf("GetAllReservations Response: %+v\n\n", reservationsOutput)
 	return nil
 }
 
@@ -56,9 +56,9 @@ func CancelReservation(client *rpc.Client) error {
 	var cancelReserveOutput string
 	err := client.Call("ProductRoutes.CancelReservation", reserveInput, &cancelReserveOutput)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
-	fmt.Println("CancelReservation Response:", cancelReserveOutput)
+	fmt.Printf("CancelReservation Response: %+v\n\n", cancelReserveOutput)
 	return nil
 }
 
@@ -68,8 +68,6 @@ type ProductGetUnreservedByWarehouseID struct {
 
 type ProductOutput struct {
 	ID         int    `json:"product_id"`
-	Name       string `json:"name"`
-	Size       string `json:"size"`
 	UniqueCode string `json:"unique_code"`
 	Quantity   int    `json:"quantity"`
 }
@@ -85,8 +83,8 @@ func GetUnreservedProductsByWarehouseID(client *rpc.Client) error {
 	var productsOutput ProductsOutput
 	err := client.Call("ProductRoutes.GetUnreservedProductsByWarehouseID", input, &productsOutput)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Info(err)
 	}
-	fmt.Println("GetUnreservedProductsByWarehouseID Response:", productsOutput)
+	fmt.Printf("GetUnreservedProductsByWarehouseID Response: %+v\n", productsOutput)
 	return nil
 }

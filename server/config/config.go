@@ -10,9 +10,6 @@ import (
 type Config struct {
 	BindAddr    string `yaml:"bind_addr"`
 	DataBaseURL string `yaml:"db_url"`
-	RedisAddr   string `yaml:"redis_addr"`
-	RedisPass   string `yaml:"redis_password"`
-	RedisType   int    `yaml:"redis_type"`
 }
 
 func NewConfig(configPath string) (*Config, error) {

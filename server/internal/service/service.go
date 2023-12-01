@@ -58,27 +58,9 @@ type Product interface {
 	GetAllReservations(ctx context.Context) (ProductReservationOutput, error)
 }
 
-type ShippingCreateInput struct {
-	UniqueCode  string
-	WarehouseID int
-	Quantity    int
-}
-
-type ShippingOutput struct {
-	ID          int    `json:"shipping_id"`
-	UniqueCode  string `json:"unique_code"`
-	WarehouseID int    `json:"warehouse_id"`
-	Quantity    int    `json:"quantity"`
-}
-
-type Shipping interface {
-	CreateShipping(context.Context, ShippingCreateInput) error
-}
-
 type Services struct {
 	Warehouse Warehouse
 	Product   Product
-	Shipping  Shipping
 }
 
 type ServicesDependencies struct {
@@ -89,6 +71,5 @@ func NewServices(deps ServicesDependencies) *Services {
 	return &Services{
 		Warehouse: NewWarehouseService(deps.Repos.Warehouse),
 		Product:   NewProductService(deps.Repos.Product, deps.Repos.Shipping, deps.Repos.Reservation),
-		Shipping:  NewShippingService(deps.Repos.Shipping),
 	}
 }

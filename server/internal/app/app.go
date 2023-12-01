@@ -63,10 +63,8 @@ func Run(configPath string) {
 	if err := rpc.Register(productRoutes); err != nil {
 		logrus.Fatal(err)
 	}
-	// if err := rpc.Register(shippingRoutes); err != nil {
-	// 	logrus.Fatal(err)
-	// }
 
+	logrus.Infof("Tcp listen port %s...", cfg.BindAddr)
 	listener, err := net.Listen("tcp", cfg.BindAddr)
 	if err != nil {
 		logrus.Fatal(err)
