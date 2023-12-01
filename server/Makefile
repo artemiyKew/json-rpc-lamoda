@@ -11,4 +11,7 @@ run: build
 test: 
 	go test -v -race -timeout 30s ./...
 
+compose:
+	docker compose up
+
 .DEFAULT_GOAL = build
