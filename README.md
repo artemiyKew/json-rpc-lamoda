@@ -9,25 +9,25 @@
 Скопируйте проект
 
 ```bash
-  git clone https://github.com/artemiyKew/json-rpc-lamoda.git
+git clone https://github.com/artemiyKew/json-rpc-lamoda.git
 ```
 
 Перейдите в каталог проекта
 
 ```bash
-  cd json-rpc-lamoda
+cd json-rpc-lamoda
 ```
 
 Запустите сервер
 
 ```bash
-  cd server && make compose
+cd server && make compose
 ```
 
 Запустите клиента 
 
 ```bash
-  cd client && make run
+cd client && make run
 ```
 
 ## Environment Variables
