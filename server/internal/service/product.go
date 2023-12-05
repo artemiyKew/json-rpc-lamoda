@@ -81,7 +81,7 @@ func (s *ProductService) GetUnreservedProductsByWarehouseID(ctx context.Context,
 }
 
 func (s *ProductService) CreateReserve(ctx context.Context, uniqueCodes []string) error {
-	uniqueCodesMap := make(map[string]int, 0)
+	uniqueCodesMap := make(map[string]int, len(uniqueCodes))
 
 	for _, uniqueCode := range uniqueCodes {
 		uniqueCodesMap[uniqueCode]++
@@ -112,7 +112,7 @@ func (s *ProductService) CreateReserve(ctx context.Context, uniqueCodes []string
 }
 
 func (s *ProductService) CancelReservation(ctx context.Context, uniqueCodes []string) error {
-	uniqueCodesMap := make(map[string]int, 0)
+	uniqueCodesMap := make(map[string]int, len(uniqueCodes))
 
 	for _, uniqueCode := range uniqueCodes {
 		uniqueCodesMap[uniqueCode]++
